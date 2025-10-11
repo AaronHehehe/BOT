@@ -1,0 +1,764 @@
+# see pipfile
+# CPU + GPU support
+import requests
+import os
+import random
+import discord
+import speech_recognition as speech_recog
+from discord.ext import commands
+from pass_generator import gen_pass
+from modern_dict import m_dict
+from IND_Summary import summariztion
+from ENG_summary import summarization
+from datetime import datetime
+from model import get_class
+from detect_objects import detect
+from logic_poke import Pokemon
+from transformers import pipeline
+from logica import Pokemon
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+# Game state variables for tictactoe
+current_player = None
+board = [[' ' for _ in range(3)] for _ in range(3)]  # 3x3 Tic-Tac-Toe board
+
+# to enable intents in discord 2.0
+intents = discord.Intents.all()
+intents.message_content = True
+intents.messages = True # Allowing the bot to process messages
+intents.guilds = True   # Allowing the bot to work with servers (guilds)
+# function initialization by prefix
+bot = commands.Bot(command_prefix='.', intents=intents, help_command= None)
+# on_ready event := Anything happens in discord server
+@bot.event # decorator to modify python function itself if bot have logged in
+async def on_ready(): # async to write a code not in chronologically
+    print(f'We have logged in as {bot.user}')
+# The async def keyword in Python is used to define a coroutine function. 
+# A coroutine is a function that can be suspended and resumed at a later point in time. 
+# This makes it ideal for asynchronous(await) programming, where multiple tasks can be running concurrently.
+# prompt command 
+@bot.command() # calls the function
+async def hai(ctx): # context
+    await ctx.send(f"Hi! I'm {bot.user} \U0001f642") #async bot to wait the previous instructions
+    await ctx.send(60*'=')
+    await ctx.send(f'1. Saya bisa membantumu untuk menghasilkan kata sandi dengan ketik .pw')
+    await ctx.send(f'2. Saya bisa membantumu mencari arti kata slang dengan ketik .dt <kata kapital> contoh .dt CRINGE')
+    await ctx.send(f'3. Saya bisa membantumu membuat emoji dengan ketik .dt <kata> contoh .dt marah') 
+    await ctx.send(f'4. Saya bisa membantumu memberikan gambar acak anjing dengan ketik .dog') 
+    await ctx.send(f'5. Saya bisa membantumu memberikan gambar acak bebek dengan ketik .duck') 
+    await ctx.send(f'6. Saya bisa membantumu memberikan meme acak local hari ini dengan ketik .meme')
+    await ctx.send(f'7. Saya bisa membantumu memberikan coinflip dengan ketik .coinflip')
+    await ctx.send(f'8. Saya bisa membantumu memberikan random dice dengan ketik .dice')
+    await ctx.send(f'9. Saya bisa membantumu memperbarui versi bot ketik $unload lalu enter ketik .load lalu enter dan ketik .load lalu enter')
+    await ctx.send(f'10. Saya bisa membantumu debug(memperbaiki) error dari bot ketik .reload')
+    await ctx.send(f'11. Saya bisa membantumu +(add), -(min), x(times), /(div), exponent(pow) contoh .add 1 2')
+    await ctx.send(f'12. Saya bisa membantumu membuat spam contoh .repeat 2 ayo bangun')
+    await ctx.send(f'13. Saya bisa membantumu menulis(overwrite), baca(read only latest note), tambahkan(append) .tulis 11 ayo bangun; .baca; .tambahkan hello world')
+    await ctx.send(f'14. Saya bisa membantumu mencari keyword dari sebuah kalimat IDN dengan ketik .analisis <kalimat> contoh .analisis saya suka dia dan dia adalah anugerah')
+    await ctx.send(f'15. Saya bisa membantumu mencari keyword dari sebuah kalimat ENG dengan ketik .analysis <kalimat> contoh .analysis I love you')
+    await ctx.send(f'16. Saya bisa membantumu mendapatkan sentiment dari sebuah kalimat any language dengan ketik .sentiment <kalimat> atau $sentiment_vander <kalimat> contoh .sentiment I love you')
+    await ctx.send(f'17. Waktu sekarang .waktu')
+    await ctx.send(f'18. Simpan Lokal, upload file lalu tuliskan .simpan')
+    await ctx.send(f'19. klasifikasi jenis buah atau makanan atau elemen upload file lalu ketik .klasifikasi atau .buah/.elemen/.makanan')
+    await ctx.send(f'20. deteksi object upload file lalu .deteksi')
+    await ctx.send(f'21. Menghasilkan nama dan gambar acak pokemon .go')
+    await ctx.send(f'22. Berdiskusi dengan LLM Google Gemini .gemini')    
+    await ctx.send(f'23. Melihat semua file dalam local drive .local_drive')
+    await ctx.send(f'24. Menujukan file tentu dari local files folder .showfile <namefile>')
+    await ctx.send(f'25. Bermain tictactoe dengan ketik .tictactoe <@opponent player> example .tictactoe @me dan .place row collumn example .place 1 2')    
+    await ctx.send(f'26. Bermain music dengan ketik /play <judul lagu (lenkgap)> example /play justin bieber you smile')
+    await ctx.send(f'27. Bantuan/saran ketik .help') 
+    await ctx.send(f'28. Menjalaskan apa itu rangka tubuh .rangka')
+    await ctx.send(f'28. Menjalaskan apa itu jantung .jantung')
+    await ctx.send(f'28. Menjalaskan apa itu paruparu .paru')
+    await ctx.send(f'28. Menjalaskan apa itu darah .darah')
+    await ctx.send(f'28. Menjalaskan apa itu otot .otot')
+    await ctx.send(f'28. Menjalaskan apa itu mata .mata')
+    await ctx.send(f'28. Menjelaskan apa itu neuron dan sistem saraf .neuronsaraf')
+    await ctx.send(f'28. Menjalaskan apa itu alat reproduksi lelaki .reproduksilelaki')
+    await ctx.send(f'28. Menjalaskan apa itu alat reproduksi wanita .reproduksiwanita')
+    await ctx.send(60*'=')
+    await ctx.send(f'daftar kata: CRINGE, BRB, LOL, GG, AFK, CREEPY(dev.)')
+    await ctx.send(f'daftar kata penghasil emoji: marah, terbahak, keren, sedih, senyum, ok(dev.)')
+    await ctx.send(f'Silakan pilih permintaanmu')               
+
+#waktu sekarang
+@bot.command()
+async def waktu(ctx):
+    await ctx.send(datetime.now())
+# help
+@bot.command(aliases = ["about"]) 
+async def help(ctx):
+    MyEmbed = discord.Embed(title = "Help", description="available contacts to help you",color=discord.Colour.dark_blue())
+    MyEmbed.set_thumbnail(url="https://logodownload.org/wp-content/uploads/2017/11/discord-logo-1-1.png")
+    MyEmbed.add_field(name = "Contacts", value="vensiandoe@gmail.com or +6281298190169",inline = False)
+    await ctx.send(embed = MyEmbed)
+#tictactoe game
+# Game state variables
+current_player = None
+board = [[' ' for _ in range(3)] for _ in range(3)]  # 3x3 Tic-Tac-Toe board
+player1 = None  # Store player1 to keep track of turns
+player2 = None  # Store player2 to keep track of turns
+@bot.command()
+async def tictactoe(ctx, opponent: discord.Member):
+    """Starts a Tic-Tac-Toe game with another player as second player."""
+    global current_player, board, player1, player2
+    if current_player is not None:
+        await ctx.send("A game is already in progress.")
+        return
+
+    player1 = ctx.author
+    player2 = opponent
+    current_player = player1  # Start with player1
+    board = [[' ' for _ in range(3)] for _ in range(3)]
+    await ctx.send(
+        f"{ctx.author.mention} (1st player) has challenged {opponent.mention} (2nd player)to a game of Tic-Tac-Toe!"
+    )
+    await display_board(ctx)
+
+@bot.command()
+async def palindrome(ctx, kata:str):
+    reverse=""
+    for letter in kata:
+        reverse = letter + reverse
+    
+    if kata == reverse:
+        await ctx.send("This word is a palindrome!")
+    else:
+        await ctx.send("This word is not a palindrome :(")
+
+
+@bot.command()
+async def place(ctx, x: int, y: int):
+    """Places your mark (X or O) on the board. Example: !place 1 2"""
+    global current_player, board, player1, player2
+    if current_player is None:
+        await ctx.send("Start a game first using !tictactoe @opponent")
+        return
+
+    if not (1 <= x <= 3 and 1 <= y <= 3):
+        await ctx.send(
+            "Invalid coordinates. Coordinates should be between 1 and 3.")
+        return
+
+    x -= 1
+    y -= 1
+    if board[x][y] != ' ':
+        await ctx.send("That spot is already taken!")
+        return
+
+    # Determine the mark based on the current player
+    mark = 'X' if current_player == player1 else 'O'
+    board[x][y] = mark
+    await display_board(ctx)
+
+    if check_win(mark):
+        await ctx.send(f"{current_player.mention} wins!")
+        current_player = None
+        player1 = None
+        player2 = None
+    elif check_draw():
+        await ctx.send("It's a draw!")
+        current_player = None
+        player1 = None
+        player2 = None
+    else:
+        # Switch to the other player
+        current_player = player2 if current_player == player1 else player1
+        await ctx.send(f"It's {current_player.mention}'s turn.")
+
+
+async def display_board(ctx):
+    """Displays the current state of the Tic-Tac-Toe board."""
+    board_str = "```\n"
+    for row in board:
+        board_str += " | ".join(row) + "\n"
+        board_str += "---------\n"
+    board_str += "```"
+    await ctx.send(board_str)
+
+
+def check_win(mark):
+    """Checks if the given mark has won the game."""
+    # Check rows
+    for row in board:
+        if all(cell == mark for cell in row):
+            return True
+    # Check columns
+    for col in range(3):
+        if all(board[row][col] == mark for row in range(3)):
+            return True
+    # Check diagonals
+    if (board[0][0] == mark and board[1][1] == mark and board[2][
+            2] == mark) or (board[0][2] == mark and board[1][1] == mark
+                           and board[2][0] == mark):
+        return True
+
+    return False
+def check_draw():
+    """Checks if the game is a draw."""
+    return all(cell != ' ' for row in board for cell in row)
+#show local drive    
+@bot.command()
+async def local_drive(ctx):
+    try:
+      folder_path = "./files"  # Replace with the actual folder path
+      files = os.listdir(folder_path)
+      file_list = "\n".join(files)
+      await ctx.send(f"Files in the files folder:\n{file_list}")
+    except FileNotFoundError:
+      await ctx.send("Folder not found.") 
+#show local file
+@bot.command()
+async def showfile(ctx, filename):
+  """Sends a file as an attachment."""
+  folder_path = "./files/"
+  file_path = os.path.join(folder_path, filename)
+
+  try:
+    await ctx.send(file=discord.File(file_path))
+  except FileNotFoundError:
+    await ctx.send(f"File '{filename}' not found.")
+# upload file to local computer
+@bot.command()
+async def simpan(ctx):
+    if ctx.message.attachments:
+        for attachment in ctx.message.attachments:
+            file_name = attachment.filename
+            # file_url = attachment.url  IF URL
+            await attachment.save(f"./files/{file_name}")
+            await ctx.send(f"Menyimpan {file_name}")
+    else:
+        await ctx.send("Anda lupa mengunggah :(")
+        
+#Computer Vision Classification Pipit/Merpati
+@bot.command()
+async def unggas(ctx):
+    if ctx.message.attachments:
+        for attachment in ctx.message.attachments:
+            file_name = attachment.filename
+            #file_url = attachment.url IF URL
+            await attachment.save(f"./CV/{file_name}")
+            await ctx.send(get_class(model_path="keras_model.h5", labels_path="labels.txt", image_path=f"./CV/{file_name}"))
+    else:
+        await ctx.send("Anda lupa mengunggah gambar :(")
+
+@bot.command()
+async def elemen(ctx):
+    if ctx.message.attachments:
+        for attachment in ctx.message.attachments:
+            file_name = attachment.filename
+            #file_url = attachment.url IF URL
+            await attachment.save(f"./CV/{file_name}")
+            await ctx.send(get_class(model_path="keras_model_elemen.h5", labels_path="labels_elemen.txt", image_path=f"./CV/{file_name}"))
+    else:
+        await ctx.send("Anda lupa mengunggah gambar :(")
+
+
+@bot.command()
+async def makanan(ctx):
+    if ctx.message.attachments:
+        for attachment in ctx.message.attachments:
+            file_name = attachment.filename
+            #file_url = attachment.url IF URL
+            await attachment.save(f"./CV/{file_name}")
+            await ctx.send(get_class(model_path="keras_model(2).h5", labels_path="labels(2).txt", image_path=f"./CV/{file_name}"))
+    else:
+        await ctx.send("Anda lupa mengunggah gambar :(")
+
+@bot.command()
+async def buah(ctx):
+    if ctx.message.attachments:
+        for attachment in ctx.message.attachments:
+            file_name = attachment.filename
+            #file_url = attachment.url IF URL
+            await attachment.save(f"./CV/{file_name}")
+            await ctx.send(get_class(model_path="keras_model(3).h5", labels_path="labels(3).txt", image_path=f"./CV/{file_name}"))
+    else:
+        await ctx.send("Anda lupa mengunggah gambar :(")
+
+#Computer Vision Deteksi objek
+@bot.command()
+async def deteksi(ctx):
+    if ctx.message.attachments:
+        for attachment in ctx.message.attachments:
+            file_name = attachment.filename
+            await attachment.save(f"./CV/{file_name}")
+            await ctx.send(detect(input_image=f"./CV/{file_name}", output_image=f"./CV/{file_name}", model_path="yolov3.pt"))
+            with open(f'CV/{file_name}', 'rb') as f:
+                picture = discord.File(f)
+            await ctx.send(file=picture)
+    else:
+        await ctx.send("Anda lupa mengunggah gambar :(")
+# gemini
+@bot.command()
+async def gemini(ctx):
+    await ctx.send(f'Berikut adalah link Gemini: https://gemini.google.com/u/1/app/2e1885bb651fd47b')
+
+# gemini
+@bot.command()
+async def youtube(ctx):
+    await ctx.send(f'Berikut adalah link youtube: https://www.youtube.com/')
+
+# map
+@bot.command()
+async def map(ctx):
+    await ctx.send(f'Berikut adalah link map: https://www.google.co.id/maps')   
+
+# coinflip
+@bot.command()
+async def coinflip(ctx):
+    num = random.randint(1,2)
+    if num == 1:
+        await ctx.send('It is Head!')
+    if num == 2:
+        await ctx.send('It is Tail!')
+
+# rolling dice
+@bot.command()
+async def dice(ctx):
+    nums = random.randint(1,6)
+    if nums == 1:
+        await ctx.send('It is 1!')
+    elif nums == 2:
+        await ctx.send('It is 2!')
+    elif nums == 3:
+        await ctx.send('It is 3!')
+    elif nums == 4:
+        await ctx.send('It is 4!')
+    elif nums == 5:
+        await ctx.send('It is 5!')
+    elif nums == 6:
+        await ctx.send('It is 6!')
+
+@bot.command()
+async def nabung(ctx):
+    nums = random.randint(1,6)
+    if nums == 1:
+        await ctx.send('50 Ribu')
+    elif nums == 2:
+        await ctx.send('20 Ribu')
+    elif nums == 3:
+        await ctx.send('5 Ribu')
+    elif nums == 4:
+        await ctx.send('1 Ribu')
+    elif nums == 5:
+        await ctx.send('2 Ribu')
+    elif nums == 6:
+        await ctx.send('100 Ribu')
+# password generator
+@bot.command()
+async def pw(ctx):
+    await ctx.send(f'Kata sandi yang dihasilkan: {gen_pass(13)}')
+# random local meme image
+@bot.command()
+async def meme(ctx):
+    # menampilkan secara random
+    img_name = random.choice(os.listdir('meme'))
+    with open(f'meme/{img_name}', 'rb') as f:
+    # with open(f'meme/enemies-meme.jpg', 'rb') as f:
+        # Mari simpan file perpustakaan/library Discord yang dikonversi dalam variabel ini!
+        picture = discord.File(f)
+    await ctx.send(file=picture)
+
+# API to get random dog and duck image 
+def get_dog_image_url():
+    url = 'https://random.dog/woof.json'
+    res = requests.get(url)
+    data = res.json()
+    return data['url']
+
+@bot.command('dog')
+async def dog(ctx):
+    '''Setiap kali permintaan dog (anjing) dipanggil, program memanggil fungsi get_dog_image_url'''
+    image_url = get_dog_image_url()
+    await ctx.send(image_url)
+
+def get_duck_image_url():
+    url = 'https://random-d.uk/api/random'
+    res = requests.get(url)
+    data = res.json()
+    return data['url']
+
+@bot.command('duck')
+async def duck(ctx):
+    '''Setiap kali permintaan duck (bebek) dipanggil, program memanggil fungsi get_duck_image_url'''
+    image_url = get_duck_image_url()
+    await ctx.send(image_url)
+
+# The '$go' command
+@bot.command()
+async def go(ctx):
+    author = ctx.author.name  # Getting the name of the message's author
+    # Check whether the user already has a Pokémon. If not, then...
+    # if author not in Pokemon.pokemons.keys():
+    pokemon = Pokemon(author)  # Creating a new Pokémon
+    await ctx.send(await pokemon.info())  # Sending information about the Pokémon
+    image_url = await pokemon.show_img()  # Getting the URL of the Pokémon image
+    if image_url:
+        embed = discord.Embed()  # Creating an embed message
+        embed.set_image(url=image_url)  # Setting up the Pokémon's image
+        await ctx.send(embed=embed)  # Sending an embedded message with an image
+    else:
+        await ctx.send("Failed to upload an image of the pokémon.")
+
+@bot.command()
+async def dt(ctx, arg):
+    await ctx.send(f"{m_dict(arg)}")
+
+
+@bot.command() 
+async def analisis(ctx, *, kalimat: str):
+    await ctx.send(f"keyword: {summariztion(kalimat)}")
+    # if summariztion(kalimat).lower()=="bahagia" or summariztion(kalimat).lower()=="sukses" or summariztion(kalimat).lower()=="sehat" or summariztion(kalimat).lower()=="sabar" or summariztion(kalimat).lower()=="cerdas" or summariztion(kalimat).lower()=="kreatif" or summariztion(kalimat).lower()=="inspiratif" or summariztion(kalimat).lower()=="peduli" or summariztion(kalimat).lower()=="tangguh" or summariztion(kalimat).lower()=="berani" or summariztion(kalimat).lower()=="damai" or summariztion(kalimat).lower()=="bersyukur" or summariztion(kalimat).lower()=="setia" or summariztion(kalimat).lower()=="bijaksana" or summariztion(kalimat).lower()=="murah hati" or summariztion(kalimat).lower()=="optimis" or summariztion(kalimat).lower()=="semangat" or summariztion(kalimat).lower()=="harapan" or summariztion(kalimat).lower()=="kasih" or summariztion(kalimat).lower()=="syukur":
+    #     await ctx.send("Sentimen Positif")
+    # elif summariztion(kalimat).lower()=="sedih" or summariztion(kalimat).lower()=="marah" or summariztion(kalimat).lower()=="takut" or summariztion(kalimat).lower()=="benci" or summariztion(kalimat).lower()=="bosan" or summariztion(kalimat).lower()=="malas" or summariztion(kalimat).lower()=="iri" or summariztion(kalimat).lower()=="dendam" or summariztion(kalimat).lower()=="sombong" or summariztion(kalimat).lower()=="pemarah" or summariztion(kalimat).lower()=="pemalas" or summariztion(kalimat).lower()=="pengecut" or summariztion(kalimat).lower()=="pesimis" or summariztion(kalimat).lower()=="muak" or summariztion(kalimat).lower()=="sarkastik" or summariztion(kalimat).lower()=="kesal" or summariztion(kalimat).lower()=="kecewa" or summariztion(kalimat).lower()=="jelek" or summariztion(kalimat).lower()=="buruk" or summariztion(kalimat).lower()=="bodoh" or summariztion(kalimat).lower()=="rugi":
+    #     await ctx.send("Sentimen Negatif")
+    # else:
+    #     await ctx.send("Sentimen Netral")
+
+# text analytics ENG dev.
+@bot.command() 
+async def analysis(ctx, *, kalimat2: str):
+    await ctx.send(f"keyword: {summarization(kalimat2)}")
+
+# sentiment dev.
+@bot.command() 
+async def sentiment(ctx, *, kalimat3: str):
+    # Initialize sentiment analysis pipeline with GPU support
+    analyzer = pipeline('sentiment-analysis', model='nlptown/bert-base-multilingual-uncased-sentiment',device=1, batch_size=8, truncation=True)
+    sentiment = analyzer(kalimat3)[0]
+    await ctx.send(f"Sentiment: {sentiment['label']}")
+    await ctx.send(f"Score: {sentiment['score']}")
+
+@bot.command()
+async def sentiment_vander(ctx, *, kalimat4: str):
+    analyzer = SentimentIntensityAnalyzer()
+    scores = analyzer.polarity_scores(kalimat4)
+    # Format the output for better readability
+    formatted_scores = f"""
+    Negative: {scores['neg']:.3f}
+    Neutral: {scores['neu']:.3f}
+    Positive: {scores['pos']:.3f}
+    Compound: {scores['compound']:.3f}
+    """
+    await ctx.send(f"Score: {formatted_scores}")
+
+# adding two numbers
+@bot.command()
+async def add(ctx, left: float, right: float):
+    """Adds two numbers together."""
+    await ctx.send(left + right)
+# subtraction two numbers
+@bot.command()
+async def min(ctx, left: float, right: float):
+    """Subtraction."""
+    await ctx.send(left - right)
+# multiplying two numbers
+@bot.command()
+async def times(ctx, left: float, right: float):
+    """Multiply two numbers together."""
+    await ctx.send(left * right)
+# division two numbers
+@bot.command()
+async def division(ctx, left: float, right: float):
+    """division."""
+    await ctx.send(left / right)
+# exponentioation 
+@bot.command()
+async def exponent(ctx, left: float, right: float):
+    """exponent."""
+    await ctx.send(left ** right)
+
+# spamming word
+@bot.command()
+async def repeat(ctx, times: int, *, content: str):
+    """Repeats a message multiple times."""
+    for i in range(times):
+        await ctx.send(content)
+# overwriting kalimat.txt
+@bot.command()
+async def tulis(ctx, *, my_string: str):
+    with open('kalimat.txt', 'w', encoding='utf-8') as t:
+        text = ""
+        text += my_string
+        t.write(text)
+
+# append kalimat.txt
+@bot.command()
+async def tambahkan(ctx, *, my_string: str):
+    with open('kalimat.txt', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+# reading kalimat.txt
+@bot.command()
+async def baca(ctx):
+    with open('kalimat.txt', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+
+# append kalimat.txt
+@bot.command()
+async def tambahjantung(ctx, *, my_string: str):
+    with open('Jantung', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text) 
+
+@bot.command()
+async def jantung(ctx):
+    with open('Jantung', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('jantung.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+
+        
+@bot.command()
+async def rangka(ctx):
+    with open('Rangka', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('Rangka.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+
+@bot.command()
+async def tambahrangka(ctx, *, my_string: str):
+    with open('Rangka', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+@bot.command()
+async def neuronsaraf(ctx):
+    with open('nrsf.txt', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('nersar.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+
+@bot.command()
+async def tambahneuronsaraf(ctx, *, my_string: str):
+    with open('nrsf.txt', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+@bot.command()
+async def otot(ctx):
+    with open('Otot', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('Otot.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+
+@bot.command()
+async def tambahotot(ctx, *, my_string: str):
+    with open('Otot', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+@bot.command()
+async def paru(ctx):
+    with open('paruparu', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('Paru.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+@bot.command()
+async def mata(ctx):
+    with open('Mata', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('mata.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+
+@bot.command()
+async def tambahmata(ctx, *, my_string: str):
+    with open('Mata', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+@bot.command()
+async def tambahparu(ctx, *, my_string: str):
+    with open('paruparu', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+
+@bot.command()
+async def darah(ctx):
+    with open('Darah', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('darah.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+@bot.command()
+async def tambahdarah(ctx, *, my_string: str):
+    with open('Darah', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+@bot.command()
+async def ginjal(ctx):
+    with open('ginjal.txt', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('ginjal.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+@bot.command()
+async def tambahginjal(ctx, *, my_string: str):
+    with open('ginjal.txt', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+@bot.command()
+async def reproduksilelaki(ctx):
+    with open('AlatPria.txt', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('AP.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+
+@bot.command()
+async def tambahlelaki(ctx, *, my_string: str):
+    with open('AlatPria.txt', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+@bot.command()
+async def reproduksiwanita(ctx):
+    with open('AlatWanita.txt', 'r', encoding='utf-8') as t:
+        document = t.read()
+        await ctx.send(document)
+    with open('AW.jpg', 'rb') as f:
+        picture = discord.File(f)
+        await ctx.send(file=picture)
+
+
+@bot.command()
+async def tambahwanita(ctx, *, my_string: str):
+    with open('AlatWanita.txt', 'a', encoding='utf-8') as t:
+        text = "\n"
+        text += my_string
+        t.write(text)
+
+# welcome message
+@bot.command()
+async def joined(ctx, member: discord.Member):
+    """Says when a member joined."""
+    await ctx.send(f'{member.name} joined {discord.utils.format_dt(member.joined_at)}')
+    await ctx.send('type $load to start then type $hello')
+@bot.event
+async def on_member_join(member):
+    # Sending a greeting message
+    for channel in member.guild.text_channels:
+        await channel.send(f'Welcome, {member.mention}!')
+        await channel.send('type $load to start then type $hello')
+
+# Cogs(related to class) is still running even there are changing(updating)
+@bot.command()
+async def load(ctx):
+    await bot.load_extension("Cogs")
+    await ctx.send('loaded')
+@bot.command()
+async def unload(ctx):
+    await bot.unload_extension("Cogs")
+    await ctx.send('unloaded')
+@bot.command()
+async def reload(ctx):
+    await bot.reload_extension("Cogs")
+    await ctx.send('reloaded')
+
+LANGUAGES = {
+    '1': {'code': 'id', 'name': 'Indonesian'},
+    '2': {'code': 'en-GB', 'name': 'English'},
+    '3': {'code': 'ja', 'name': 'Japanese'},
+    '4': {'code': 'ko', 'name': 'Korean'},
+    '5': {'code': 'zh-CN', 'name': 'Chinese (Simplified)'}
+}
+
+@bot.command()
+async def speech(ctx):
+    def format_langs():
+        return '\n'.join([f"{key}. {value['name']}" for key, value in LANGUAGES.items()])
+    
+    await ctx.send("Please select a language by typing the number:\n" + format_langs())
+
+    def check(m):
+        return m.author == ctx.author and m.channel == ctx.channel
+
+    try:
+        user_msg = await bot.wait_for('message', timeout=30.0, check=check)
+        choice = user_msg.content.strip()
+        
+        if choice not in LANGUAGES:
+            await ctx.send("Invalid language choice.")
+            return
+        
+        selected_lang = LANGUAGES[choice]
+        await ctx.send(f"Listening using local microphone. Please speak in {selected_lang['name']}...")
+
+        mic = speech_recog.Microphone()
+        recog = speech_recog.Recognizer()
+
+        with mic as audio_file:
+            recog.adjust_for_ambient_noise(audio_file)
+            audio = recog.listen(audio_file)
+
+        await ctx.send("Converting speech to text...")
+        text = recog.recognize_google(audio, language=selected_lang['code'])
+        await ctx.send(f"You said: `{text}`")
+
+    except speech_recog.UnknownValueError:
+        await ctx.send("Sorry, could not understand the audio.")
+    except speech_recog.RequestError as e:
+        await ctx.send(f"API error: {e}")
+    except Exception as e:
+        await ctx.send(f"Error occurred: {e}")
+
+@bot.command()
+async def pokemonlol(ctx):
+    author = ctx.author.name  # Getting the name of the message's author
+    # Check whether the user already has a Pokémon. If not, then...
+    if author not in Pokemon.pokemons.keys():
+        pokemon = Pokemon(author)  # Creating a new Pokémon
+        await ctx.send(await pokemon.info())  # Sending information about the Pokémon
+        image_url = await pokemon.show_img()  # Getting the URL of the Pokémon image
+        if image_url:
+            embed = discord.Embed()  # Creating an embed message
+            embed.set_image(url=image_url)  # Setting up the Pokémon's image
+            await ctx.send(embed=embed)  # Sending an embedded message with an image
+        else:
+            await ctx.send("Failed to upload an image of the pokémon.")
+    else:
+        await ctx.send("You've already created your own Pokémon.")  # A message that is printed whether a Pokémon has already been created
+# Running the bot
+
+# bot token
+bot.run()
